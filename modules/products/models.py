@@ -8,19 +8,34 @@ from config.database import Base
 
 class Product(Base):
     __tablename__ = 'products'
-    
-    product_id = Column(Integer, primary_key=True, index=True)
+    product_id = Column(Integer, primary_key=True)
     name = Column(String(255), nullable=False)
-    category = Column(String(100), index=True)
+    category = Column(String(100))
     subcategory = Column(String(100))
     price = Column(Numeric(10, 2), nullable=False)
     description = Column(Text)
     brand = Column(String(100))
-    stock_quantity = Column(Integer, default=0)
+    stock_quantity = Column(Integer, default=1)  # Usually 1 for trinkets
     image_url = Column(String(500))
+    
+    condition = Column(String(50))  # "mint", "used", "vintage", "damaged"
+    year_manufactured = Column(Integer)  # For vintage items
+    brand = Column(String(100))
+    material = Column(String(100))  # "ceramic", "metal", "plastic", etc.
+    dimensions = Column(String(100))  # "5x3x2 inches"
+    rarity = Column(String(50))  # "common", "uncommon", "rare"
+
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     is_active = Column(Boolean, default=True)
+
+    # Price intelligence fields
+    suggested_price = Column(Numeric(10, 2))
+    price_confidence = Column(String(20))  # "high", "medium", "low"
+    market_average = Column(Numeric(10, 2))
+    last_market_check = Column(DateTime)
+
+    
     
     # Relationships
     order_items = relationship("OrderItem", back_populates="product")

@@ -7,12 +7,18 @@ from modules.products.models import Product
 from typing import Optional, List
 
 class ProductService:
+    """"year_manufactured": 1999
+        "condition": "near-mint"
+        "material": "plastic"
+        "description": "A rare vintage item from 1999..."
+        "authenticity_verified": true"""
     
     @staticmethod
     def create_product(db: Session, name: str, price: float, category: str = None,
                       subcategory: str = None, description: str = None, 
                       brand: str = None, stock_quantity: int = 0,
-                      image_url: str = None) -> Product:
+                      image_url: str = None, year_manufactured: int = None, condition: str = None, material: str = None,
+                      authenticity_verified: bool = False ) -> Product:
         """Create a new product"""
         product = Product(
             name=name,
@@ -22,7 +28,11 @@ class ProductService:
             description=description,
             brand=brand,
             stock_quantity=stock_quantity,
-            image_url=image_url
+            image_url=image_url,
+            year_manufactured=year_manufactured,
+            condition=condition,
+            material=material,
+            authenticity_verified=authenticity_verified
         )
         
         db.add(product)

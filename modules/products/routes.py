@@ -20,6 +20,10 @@ def create_product():
         "brand": "AudioTech",               (optional)
         "stock_quantity": 50,               (optional, default: 0)
         "image_url": "http://..."           (optional)
+        "year_manufactured": 1999
+        "condition": "near-mint"
+        "material": "plastic"
+        "authenticity_verified": true"
     }
     
     Returns:
@@ -43,7 +47,12 @@ def create_product():
             description = data.get('description'),
             brand=data.get('brand'),
             stock_quantity=data.get('stock_quantity', 0),
-            image_url=data.get('image_url')
+            image_url=data.get('image_url'),
+            year_manufactured=data.get('year_manufactured'),
+            condition=data.get('condition'),
+            material=data.get('material'),
+            authenticity_verified=data.get('authenticity_verified', False)
+
         )
         return jsonify({product.to_dict()}),201
     except Exception as e:

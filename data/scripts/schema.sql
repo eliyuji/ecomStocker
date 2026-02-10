@@ -36,6 +36,12 @@ CREATE TABLE products (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     is_active BOOLEAN DEFAULT TRUE
+    condition VARCHAR(50),
+    year_manufactured INTEGER,
+    rarity VARCHAR(50),
+    material VARCHAR(100),
+    dimensions VARCHAR(100),
+    authenticity_verified BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 -- Orders table
@@ -84,6 +90,25 @@ CREATE TABLE user_product_interactions (
     interaction_type VARCHAR(50) NOT NULL, -- 'view', 'click', 'add_to_cart', 'purchase'
     interaction_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE trinket_categories (
+    category_id SERIAL PRIMARY KEY,
+    name VARCHAR(100) UNIQUE NOT NULL,
+    parent_category_id INT REFERENCES trinket_categories(category_id),
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO trinket_categories (name, description) VALUES
+    ('Trading Cards', 'Pokemon, Magic, Sports cards'),
+    ('Vintage Toys', 'Action figures, dolls, collectibles'),
+    ('Jewelry', 'Costume and fine jewelry'),
+    ('Coins & Stamps', 'Collectible coins and stamps'),
+    ('Figurines', 'Collectible figurines and statues'),
+    ('Vintage Electronics', 'Old gaming systems, gadgets'),
+    ('Art & Prints', 'Small art pieces and prints'),
+    ('Memorabilia', 'Sports, movie, music memorabilia');
+
 
 -- Indexes for better query performance
 CREATE INDEX idx_users_email ON users(email);
