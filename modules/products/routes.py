@@ -98,9 +98,9 @@ def get_all_products():
     try:
         skip = int(request.args.get('skip', 0))
         limit = int(request.args.get('limit', 100))
-        category = request.args.get('category')
-        if category:
-            products = ProductService.get_products_by_category(db, category, skip, limit)
+        category_id = request.args.get('category_id', type=int)
+        if category_id is not None:
+            products = ProductService.get_products_by_category_id(db, category_id, skip, limit)
         else:
             products = ProductService.get_all_products(db, skip, limit)
 
@@ -189,3 +189,8 @@ def delete_product(product_id):
         return jsonify({"error": str(e)}), 500
     finally:
         db.close()
+"""
+# Trinket-specific search
+GET  /api/products/search?condition=mint&rarity=rare
+GET  /api/products/trending            # What's selling hot right now
+"""

@@ -73,3 +73,28 @@ def method_not_allowed(error):
         'message': 'The method is not allowed for the requested URL.',
         'status_code': 405
     }), 405
+
+if __name__ == '__main__':
+
+    print("E-commerce AI Platform is starting up...")
+    print("="*50)
+    print("Initializing database...")
+
+    try:
+        init_db()
+        print("Database initialized successfully.")
+    except Exception as e:
+        print(f"Error initializing database: {e}")
+        print("  Make sure PostgreSQL is running and the connection settings in .env are correct.")
+    
+    host = os.getenv('API_HOST', '0.0.0.0')  # Default: listen on all interfaces
+    port = int(os.getenv('API_PORT', 5000))   # Default: port 5000
+    debug = os.getenv('FLASK_ENV') == 'development'  # Debug mode in development
+
+    print(f"\nStarting server on {host}:{port}")
+    print(f"Debug mode: {debug}")
+    print(f"\nAPI available at: http://localhost:{port}")
+    print(f"Health check: http://localhost:{port}/health")
+    print(f"\nPress CTRL+C to stop the server")
+    print("=" * 60)
+    print()
