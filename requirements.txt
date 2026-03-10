@@ -45,3 +45,4 @@ celery==5.3.4
 redis==5.0.1
 ebaysdk==2.2.0
 lxml==4.9.3
+
