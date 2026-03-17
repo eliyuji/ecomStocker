@@ -202,3 +202,4 @@ class EbayScraper(BaseScraper):
                 if 'vintage' not in lower_query:
                     query += 'vintage'
         return query
+    

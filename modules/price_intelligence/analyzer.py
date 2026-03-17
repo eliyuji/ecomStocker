@@ -1,38 +1,154 @@
  # Analyze pricing data
 # modules/price_intelligence/analyzer.py
 
+import statistics
+from datetime import datetime, timedelta
+from typing import List, Dict, Optional
+
 class PriceAnalyzer:
     
     @staticmethod
-    def analyze_market_price(scraped_data):
+    def analyze(sold_items: List[Dict], condition: Optional[str] = None) -> Optional[Dict]:
+        items = sold_items
+        if condition:
+            filtered = [i for i in sold_items if i.get('condition')== condition]
+
+            if filtered:
+                items = filtered
+        prices = [item['price'] for item in items]
+
+        if prices is None:
+            return None
+        average = statistics.mean(prices)
+        median = statistics.median(prices)
+        min_price = min(prices)
+        max_price = max(prices)
+        std_dev = statistics.stdev(prices) if len(prices) > 1 else 0
+
+        if len(prices) >= 30:
+            confidence = 'high'
+        elif 10 <= len(prices) < 30:
+            confidence = 'medium'
+        else:
+            confidence = 'low'
+        
+        suggested_price = median * 1.05 #5% above median for profit
+
+        #getTrendAnalyzer
+        
+        #Return dict: { 'suggested_price': float, # Rounded to 2 decimal places 'confidence': str, # 'high', 'medium', 'low' 'market_average': float, 'median_price': float, 'min_price': float, 'max_price': float, 'std_dev': float, # Price spread - high = inconsistent market 'sample_size': int, 'trend': str, # 'increasing', 'decreasing', 'stable' 'recommendation': str, # Human-readable advice }
+
+    @staticmethod
+    def _generate_recommendation(suggested_price: float,sample_size: int,trend: str,std_dev: float, market_avg:float ) -> str:
         """
-        Analyze scraped data to suggest price
-        
-        Returns:
-        {
-            'suggested_price': 25.99,
-            'confidence': 'high',
-            'market_average': 24.50,
-            'price_range': {'min': 18.00, 'max': 35.00},
-            'sample_size': 47,
-            'trend': 'increasing'  # or 'stable', 'decreasing'
-        }
+        Generate a plain-English pricing recommendation.
         """
-        prices = [item['price'] for item in scraped_data]
+        parts = []
+
+        if sample_size < 10:
+            parts.append(f"Based on only {sample_size} recent sales, this is a rough pricing estimate.")
+        elif sample_size < 30:
+            parts.append(f"Based on {sample_size} recenet sales, this pricing estimate is reasonably supported")
+        else:
+            parts.append(f'Base on {sample_size} recent sales, this pricing estimate is strongly supported by market data')
         
-        # Calculate statistics
-        avg_price = sum(prices) / len(prices)
-        median_price = sorted(prices)[len(prices)//2]
-        
-        # Check trend (recent vs older sales)
-        recent_avg = calculate_recent_average(scraped_data, days=30)
-        older_avg = calculate_older_average(scraped_data, days=90)
-        
-        trend = 'increasing' if recent_avg > older_avg * 1.1 else 'stable'
-        
-        return {
-            'suggested_price': median_price * 1.05,  # Slight markup
-            'confidence': 'high' if len(prices) > 20 else 'medium',
-            'market_average': avg_price,
-            'trend': trend
-        }
+        volatility_ratio = std_dev/ market_avg if market_avg > 0 else 0
+        if volatility_ratio > 0.50:
+            parts.append("Sale prices vary widely, suggesting condition, completeness, or provenance may significantly affect value.")
+        elif volatility_ratio > 0.20:
+            parts.append("Sale prices show some variation, so item-specific details may still affect the final selling price.")
+        else:
+            parts.append("Recent sale prices are fairly consistent, which makes the estimate more reliable.")
+
+        #trend
+        if trend == "increasing":
+            parts.append("The market appears to be trending upward.")
+        elif trend == "decreasing":
+            parts.append("The market appears to be trending downward.")
+        else:
+            parts.append("The market appears stable.")
+
+        #action advice
+
+        if trend == "increasing":
+            if sample_size < 10:
+                parts.append(f"You could start around ${suggested_price:.2f}, but be prepared to adjust quickly as more market data comes in.")
+            else:
+                parts.append(f"You could consider listing near ${suggested_price:.2f} or slightly higher if you are willing to wait for the right buyer.")
+        elif trend == "decreasing":
+            parts.append(f"Pricing competitively around ${suggested_price:.2f} may improve your chances of a quicker sale.")
+        else:
+            parts.append(f"Listing around ${suggested_price:.2f} is a reasonable starting point based on recent comparable sales.")
+
+        return " ".join(parts)
+    
+    @staticmethod
+    def remove_outliers(prices: List[float]) -> List[float]:
+        """
+        Remove statistical outliers using the IQR method.
+
+        IQR = Interquartile Range = 75th percentile - 25th percentile
+            Lower bound = Q1 - 1.5 * IQR
+            Upper bound = Q3 + 1.5 * IQR
+            Anything outside these bounds is an outlier.
+        """
+        n = len(prices)
+        if n < 4:
+            return prices
+        prices.sort()
+        q1= prices[n//4]
+        q3= prices[3*n//4]
+        iqr = q3-q1
+        filtered = [i for i in prices if q1 - 1.5 * iqr <= i <= q3 + 1.5 * iqr ]
+        return filtered
+class TrendAnalyzer:
+
+    @staticmethod
+    def calculate_trend(sold_items: List[Dict], days_recent: int = 30) -> str:
+        """
+        Compare recent average price vs older average price.
+
+        HOW IT WORKS:
+            Split sold items into two groups:
+            - "recent":  sold within the last `days_recent` days
+            - "older":   sold before that
+
+            Compare their averages. If recent is significantly higher
+            than older, the trend is 'increasing'.
+
+        PARAMETERS:
+            sold_items   List of dicts with 'price' and 'sold_date' keys
+            days_recent  How many days back counts as "recent" (default 30)
+
+        WHAT TO DO:
+            1. Parse sold_date strings to date objects
+               Skip items with no sold_date
+            2. Split into recent_items and older_items based on
+               whether sold_date >= (today - timedelta(days=days_recent))
+            3. If either group has fewer than 3 items:
+               return 'stable'  (not enough data to detect a trend)
+            4. Calculate recent_avg = mean of recent prices
+               Calculate older_avg  = mean of older prices
+            5. Calculate change_pct = (recent_avg - older_avg) / older_avg * 100
+            6. Return:
+               change_pct > +10%  → 'increasing'
+               change_pct < -10%  → 'decreasing'
+               otherwise          → 'stable'
+
+        RETURNS: 'increasing', 'decreasing', or 'stable'
+        """    
+        recent_items = []
+        older_items = []
+        for item in sold_items:
+            sold_date_str = item.get("sold_date")
+            if not sold_date_str:
+                continue
+            sold_date = datetime.strptime(sold_date_str,"%Y-%m-%d").date()
+            today = datetime.today
+            cutoff = today - timedelta(days=days_recent)
+            if sold_date >= cutoff:
+                recent_items.append(item)
+            else:
+                older_items.append(item)
+
+ 
