@@ -4,6 +4,7 @@
 import statistics
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional
+from collections import defaultdict
 
 class PriceAnalyzer:
     
@@ -107,35 +108,6 @@ class TrendAnalyzer:
     def calculate_trend(sold_items: List[Dict], days_recent: int = 30) -> str:
         """
         Compare recent average price vs older average price.
-
-        HOW IT WORKS:
-            Split sold items into two groups:
-            - "recent":  sold within the last `days_recent` days
-            - "older":   sold before that
-
-            Compare their averages. If recent is significantly higher
-            than older, the trend is 'increasing'.
-
-        PARAMETERS:
-            sold_items   List of dicts with 'price' and 'sold_date' keys
-            days_recent  How many days back counts as "recent" (default 30)
-
-        WHAT TO DO:
-            1. Parse sold_date strings to date objects
-               Skip items with no sold_date
-            2. Split into recent_items and older_items based on
-               whether sold_date >= (today - timedelta(days=days_recent))
-            3. If either group has fewer than 3 items:
-               return 'stable'  (not enough data to detect a trend)
-            4. Calculate recent_avg = mean of recent prices
-               Calculate older_avg  = mean of older prices
-            5. Calculate change_pct = (recent_avg - older_avg) / older_avg * 100
-            6. Return:
-               change_pct > +10%  → 'increasing'
-               change_pct < -10%  → 'decreasing'
-               otherwise          → 'stable'
-
-        RETURNS: 'increasing', 'decreasing', or 'stable'
         """    
         recent_items = []
         older_items = []
@@ -150,5 +122,37 @@ class TrendAnalyzer:
                 recent_items.append(item)
             else:
                 older_items.append(item)
+        
+        if len(recent_items) <=3 or len(older_items) < 3:
+            return 'stable'
+        
+        recent_prices = [item['price'] for item in recent_items]
+        older_prices = [item['price'] for item in older_items]
+        recent_avg = statistics.mean(recent_prices)
+        older_avg = statistics.mean(older_prices)
+        change_pct = (recent_avg-older_avg)/ older_avg * 100
+
+        if change_pct >= 10:
+            return 'increasing'
+        else:
+            return 'decreasing'
+        
+    def get_price_by_month(sold_items: List[Dict]) -> List[Dict]:
+        """ 
+        Group sold prices by month for graph data
+        """
+        grouped = defaultdict(list)
+        for item in sold_items:
+            sold_date = item.get('sold_date')
+            if not sold_date:
+                continue
+            month_key = sold_date[:7] #YYYY-MM
+            grouped[month_key].append(item)
+        
+        monthly_avg = {
+        month: statistics.mean(i["price"] for i in items)
+        for month, items in grouped.items()
+        }
+
 
  
