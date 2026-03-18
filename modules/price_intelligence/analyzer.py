@@ -35,9 +35,18 @@ class PriceAnalyzer:
         
         suggested_price = median * 1.05 #5% above median for profit
 
-        #getTrendAnalyzer
-        
-        #Return dict: { 'suggested_price': float, # Rounded to 2 decimal places 'confidence': str, # 'high', 'medium', 'low' 'market_average': float, 'median_price': float, 'min_price': float, 'max_price': float, 'std_dev': float, # Price spread - high = inconsistent market 'sample_size': int, 'trend': str, # 'increasing', 'decreasing', 'stable' 'recommendation': str, # Human-readable advice }
+        trend = TrendAnalyzer.calculate_trend(items)
+        reccomendation = PriceAnalyzer._generate_recommendation(suggested_price, len(prices), trend, std_dev, average)
+        return{ 'suggested_price': suggested_price,
+                'confidence': confidence,
+                'market_average':average,
+                'median_price': median,
+                'min_price': min_price,
+                'max_price': max_price,
+                'std_dev': std_dev,
+                'sample_size': len(prices),
+                'trend': trend,
+                'recommendation': reccomendation}
 
     @staticmethod
     def _generate_recommendation(suggested_price: float,sample_size: int,trend: str,std_dev: float, market_avg:float ) -> str:

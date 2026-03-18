@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS market_sales (
     sold_price DECIMAL(10, 2) NOT NULL,
     sold_date DATE,
     source VARCHAR(50),
-    source__url VARCHAR(500),
+    source_url VARCHAR(500),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )
 CREATE INDEX idx_market_sales_name ON market_sales(product_name);
