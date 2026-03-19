@@ -132,5 +132,83 @@ class PriceIntelligenceService:
             return result.to_dict()
         else:
             return None
-        
+
+    @staticmethod
+    def get_market_sales(db:Session, product_name: str, days:int = 90, limit:int = 100) -> List[Dict]:
+        cutoff= datetime.utcnow() - timedelta(days=days)
+        results = (db.query(MarketSale)
+                .filter_by(MarketSale.product_name.ilike(f"%{product_name}%"),MarketSale.created_at >= cutoff)
+                .order_by(MarketSale.sold_date.desc())
+                .limit(limit)
+                .all()
+                )
+        return [sale.to_dict() for sale in results]
+    
+    @staticmethod
+    def get_product_intelligence(db: Session, product_id: int) -> Dict:
+        """
+        Return a full price intelligence summary for one product.
+        This is what the route returns when someone calls
+        GET /api/price/product/<product_id>
+
+        WHAT TO DO:
+            1. Fetch product from DB, return error dict if not found
+            2. Get latest price check: get_latest_price_check(db, product_id)
+            3. Build and return a dict:
+               {
+                   'product_id':        product.product_id,
+                   'product_name':      product.name,
+                   'your_price':        float(product.price),
+                   'suggested_price':   float(product.suggested_price) or None,
+                   'market_average':    float(product.market_average)  or None,
+                   'price_confidence':  product.price_confidence,
+                   'last_checked':      product.last_market_check.isoformat() or None,
+                   'latest_check':      latest_check dict or None,
+                   'is_overpriced':     True if your_price > market_average * 1.2 else False,
+                   'is_underpriced':    True if your_price < market_average * 0.8 else False,
+                   'price_difference':  your_price - market_average (positive = above market),
+               }
+
+        NOTE: is_overpriced/is_underpriced logic lives HERE (service layer),
+              NOT in the model. This was discussed in our Week 1 review.
+        """
+        try:
+            product = (db.query(Product).filter_by(product_id=product_id).first())
+        except Exception as e:
+            return {'error': f'Query failed due to {e}'}
+
+        if not product:
+            return {'error': 'Product not found', 'product_id': product_id }
+        latest_check = PriceIntelligenceService.get_latest_price_check(db, product_id)
+
+        return {
+            'product_id': product.product_id,
+            'product_name': product.name,
+            'your_price': float(product.price),
+            'suggested_price': float(product.suggested_price) if product.suggested_price is not None else None,
+            'market_average': float(product.market_average) if product.market_average is not None else None,
+            'price_confidence': product.price_confidence,
+            'last_checked': product.last_market_check.isoformat() if product.last_market_check else None,
+            'latest_checked': latest_check,
+            'is_overpriced': True if product.price > product.market_average *1.2 else False,
+            'is_underpriced': True if product.price < product.market_average * 0.8 else False,
+            'price_difference': float(product.price - product.market_average)
+        }
+
+    @staticmethod
+    def _is_stale(product: Product, max_age_hours: int=24) -> bool:
+        """
+        Check if a product's price intelligence is outdated.
+        USAGE IN check_and_save_product_price():
+            if PriceIntelligenceService._is_stale(product):
+                # Re-scrape
+            else:
+                # Return cached data from product fields
+        """
+        if product.last_market_check is None:
+            return True
+        age = datetime.utcnow() - product.last_market_check
+        if age > timedelta(hours=max_age_hours):
+            return True
+        return False
     
