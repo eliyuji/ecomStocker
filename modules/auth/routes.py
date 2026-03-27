@@ -70,7 +70,7 @@ def get_all_users():
     finally:
         db.close()
 
-@user_bp.routes('/<int:user_id>', methods=['PUT'])
+@user_bp.route('/<int:user_id>', methods=['PUT'])
 def update_user(user_id):
     db = SessionLocal()
     try:
@@ -86,7 +86,7 @@ def update_user(user_id):
     finally:
         db.close()
 
-@user_bp.routes('/<int:user_id', methods=['DELETE'])
+@user_bp.route('/<int:user_id>', methods=['DELETE'])
 def delete_user(user_id):
     db = SessionLocal()
     try:

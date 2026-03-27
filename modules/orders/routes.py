@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
-from modules.products.services import OrderService
-from config import SessionLocal
+from modules.orders.services import OrderService
+from config.database import SessionLocal
 
 #Create a Blueprint for orders
 orders_bp = Blueprint('orders', __name__)

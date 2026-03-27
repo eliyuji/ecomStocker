@@ -16,6 +16,10 @@ load_dotenv()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
+app.config['broker_url'] = 'redis://localhost:6379/0'
+app.config['result_backend'] = 'redis://localhost:6379/0'
+app.config['task_serializer'] = 'json'
+app.config['accept_content'] = ['json']
 CORS(app)
 
 app.register_blueprint(orders_bp)

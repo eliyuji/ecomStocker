@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from modules.products.services import ProductService, VALID_CONDITIONS, VALID_RARITIES
-from config import SessionLocal
+from config.database import SessionLocal
 
 #Create a Blueprint for products
 products_bp = Blueprint('products', __name__)
