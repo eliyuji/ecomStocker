@@ -3,5 +3,5 @@ __pycache__/
 .venv/
 node_modules/
 .DS_Store
-.celery_worker
+celery_worker
 tasks/
